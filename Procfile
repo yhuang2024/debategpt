@@ -1,1 +1,2 @@
-web: streamlit run --server.port $PORT kbPDFMemory.py
+web: uvicorn kbapimemory:app --host=0.0.0.0 --port=${PORT:-5000}
+

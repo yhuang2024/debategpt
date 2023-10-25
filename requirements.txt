@@ -1,4 +1,10 @@
-streamlit
-PyPDF2
-streamlit_js_eval
-bs4
+openai
+langchain
+fastapi
+uvicorn
+pydantic
+psycopg2
+fastapi_utils
+chromadb
+tiktoken
+
