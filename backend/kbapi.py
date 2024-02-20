@@ -17,7 +17,7 @@ app = FastAPI()
 
 # PostgreSQL database configuration
 #DATABASE_URL = "postgresql://kbuser:kbuser@localhost/kb"
-DATABASE_URL="postgresql://ciuvvsnkwriehf:ba88c568349bcb2ccd5580d798c2ef5637660f78cade9ad60b7fa14503eef7e7@ec2-54-156-233-91.compute-1.amazonaws.com:5432/d66n3arkk36m8k"
+DATABASE_URL = "postgresql://ciuvvsnkwriehf:ba88c568349bcb2ccd5580d798c2ef5637660f78cade9ad60b7fa14503eef7e7@ec2-54-156-233-91.compute-1.amazonaws.com:5432/d66n3arkk36m8k"
 # Set up OpenAI API credentials
 openai.api_key = "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"
 os.environ["OPENAI_API_KEY"] = openai.api_key
@@ -40,7 +40,7 @@ class Message(BaseModel):
 @app.post("/add_content")
 def add_content(request: ContentRequest):
     content = request.content
-    topic="debate"
+    topic = "debate"
     if content:
         save_content(topic, content)
         return {"message": "Content added successfully"}
@@ -50,9 +50,9 @@ def add_content(request: ContentRequest):
 @app.post("/get_answer", response_model=AnswerResponse)
 async def get_answer(request: AnswerRequest):
     question = request.question
-    topic="debate"
+    topic = "debate"
     if question:
-        qa=app.query_engine
+        qa = app.query_engine
         answer = qa.run(question)
         if answer:
             return {"answer": answer}
@@ -124,9 +124,9 @@ def get_engine_from_openai(text):
 @app.on_event("startup")
 @repeat_every(seconds=300 * 1)  # 300 seconds
 def initDataIndex():
-    topic="debate"
-    total_content=""
-    knowledge=retrieve_knowledge(topic)
+    topic = "debate"
+    total_content = ""
+    knowledge = retrieve_knowledge(topic)
     for content in knowledge:
         total_content += f"\n- {content}"
     app.query_engine =get_engine_from_openai(total_content)
