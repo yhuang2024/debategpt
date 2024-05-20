@@ -166,13 +166,15 @@ def get_engine_from_openai(text):
 
 @app.on_event("startup")
 @repeat_every(seconds=300 * 1)  # 300 seconds
-def initDataIndex():
-    topic = "debate"
-    total_content = ""
+#needs to be async because fastapi updated
+async def initDataIndex():
+    topic="debate"
+    total_content=""
     knowledge=retrieve_knowledge(topic)
     for content in knowledge:
         total_content += f"\n- {content}"
-    app.query_engine = get_engine_from_openai(total_content)
+    app.query_engine =get_engine_from_openai(total_content)
+
 
 
 
