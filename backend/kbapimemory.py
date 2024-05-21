@@ -42,27 +42,22 @@ class Message(BaseModel):
 class URLRequest(BaseModel):
     extracted_text: str
 
-@app.post("/add_content")
-def add_content(request: ContentRequest):
-    content = request.content #in the box
-    topic = "debate"
-    #if there is content in the box
-    if content:
-        save_content(topic, content)
-        print("saved content")
-        return {"message": "Content added successfully"}
-    #if there is no content in the box
-    return {"message": "No content provided"}
-
-@app.post("/read_url")
-def read_url(request: URLRequest):
-    extracted_text = request.extracted
-    topic = "debate"
-    if extracted_text:
-        save_url(topic, extracted_text)
-        return{"message": "URL added successfully"}
-    return{"message": "No content provided"}
-
+def get_engine_from_openai(text):
+    text_splitter = CharacterTextSplitter("\n",
+        chunk_size=250,
+        chunk_overlap=0
+    )
+    docs = text_splitter.create_documents([text])
+    print(docs)
+    print(len(docs))
+    embeddings = OpenAIEmbeddings(openai_api_key=os.environ['OPENAI_API_KEY'])
+    docsearch = Chroma.from_documents(docs, embeddings)
+    llm = ChatOpenAI(model_name="gpt-3.5-turbo", temperature=0)
+    #qa = VectorDBQA.from_chain_type(llm=llm, chain_type="stuff", vectorstore=docsearch)
+    #initializing a chain with no Memory object
+    qa = ConversationalRetrievalChain.from_llm(llm,
+                                         docsearch.as_retriever())
+    return qa
 
 @app.post("/get_answer", response_model=AnswerResponse)
 def get_answer(request: AnswerRequest):
@@ -91,6 +86,27 @@ def get_answer(request: AnswerRequest):
         else:
             return {"answer": "No answer found"}
     return {"answer": "No question provided"}
+
+@app.post("/add_content")
+def add_content(request: ContentRequest):
+    content = request.content #in the box
+    topic = "debate"
+    #if there is content in the box
+    if content:
+        save_content(topic, content)
+        print("saved content")
+        return {"message": "Content added successfully"}
+    #if there is no content in the box
+    return {"message": "No content provided"}
+
+@app.post("/read_url")
+def read_url(request: URLRequest):
+    extracted_text = request.extracted
+    topic = "debate"
+    if extracted_text:
+        save_url(topic, extracted_text)
+        return{"message": "URL added successfully"}
+    return{"message": "No content provided"}
 
 @app.post("/debate")
 def send_message(message: Message):
@@ -135,46 +151,62 @@ def save_url(topic, extracted_text):
     connect.close()
 
 def retrieve_knowledge(topic):
-    conn = psycopg2.connect(DATABASE_URL)
-    cur = conn.cursor()
-    cur.execute("SELECT content FROM public.kb where topic='" + topic +"'")
-    #get the knowledge from the rows
-    rows = cur.fetchall()
-    knowledge = [row[0] for row in rows]
-    cur.close()
-    conn.close()
+    print("connecting to database...")
+    knowledge=""
+    try:
+        conn = psycopg2.connect(DATABASE_URL)
+        cur = conn.cursor()
+        cur.execute("SELECT content FROM public.kb where topic='" + topic +"'")
+        #get the knowledge from the rows
+        rows = cur.fetchall()
+        knowledge = [row[0] for row in rows]
+        cur.close()
+        conn.close()
+    except Exception as e:
+        print("Database connection error" + "detail" + str(e))
     return knowledge
 
-def get_engine_from_openai(text):
-    text_splitter = CharacterTextSplitter("\n",
-        chunk_size=250,
-        chunk_overlap=0
-    )
-    docs = text_splitter.create_documents([text])
-    print(docs)
-    print(len(docs))
-    embeddings = OpenAIEmbeddings(openai_api_key=os.environ['OPENAI_API_KEY'])
-    docsearch = Chroma.from_documents(docs, embeddings)
-    llm = ChatOpenAI(model_name="gpt-3.5-turbo", temperature=0)
-    #qa = VectorDBQA.from_chain_type(llm=llm, chain_type="stuff", vectorstore=docsearch)
-    #initializing a chain with no Memory object
-    qa = ConversationalRetrievalChain.from_llm(llm,
-                                         docsearch.as_retriever())
-    return qa
-
-
+import datetime
 
 @app.on_event("startup")
-@repeat_every(seconds=300 * 1)  # 300 seconds
-#needs to be async because fastapi updated
-async def initDataIndex():
-    topic="debate"
-    total_content=""
-    knowledge=retrieve_knowledge(topic)
-    for content in knowledge:
-        total_content += f"\n- {content}"
-    app.query_engine =get_engine_from_openai(total_content)
+async def startup_event():
+    print('Server started :', datetime.datetime.now())
+    asyncio.create_task(periodic_task())
+    topic = "debate"
+    total_content = ""
+    try:
+        knowledge = retrieve_knowledge(topic)
+        for content in knowledge:
+            total_content += f"\n- {content}"
+        print(total_content)
+        app.query_engine = get_engine_from_openai(total_content)
+        print("getting the engine")
+    except Exception as e:
+        print("Database connection error:"+ str(e))
 
+import asyncio
+
+async def job():
+    #function running periodically
+    print('Server started :', datetime.datetime.now())
+    topic = "debate"
+    total_content = ""
+    try:
+        knowledge = retrieve_knowledge(topic)
+        for content in knowledge:
+            total_content += f"\n- {content}"
+        print(total_content)
+
+        app.query_engine = get_engine_from_openai(total_content)
+        print("getting the engine")
+    except Exception as e:
+
+        print("Database connection error:" + str(e))
+
+async def periodic_task():
+    while True:
+        await asyncio.sleep(600)  # Sleep for 10 minutes (600 seconds)
+        await job()
 
 
 
