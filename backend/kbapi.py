@@ -16,8 +16,7 @@ from fastapi_utils.tasks import repeat_every
 app = FastAPI()
 
 # PostgreSQL database configuration
-#DATABASE_URL = "postgresql://kbuser:kbuser@localhost/kb"
-DATABASE_URL = "postgresql://ciuvvsnkwriehf:ba88c568349bcb2ccd5580d798c2ef5637660f78cade9ad60b7fa14503eef7e7@ec2-54-156-233-91.compute-1.amazonaws.com:5432/d66n3arkk36m8k"
+DATABASE_URL = "postgresql://kbuser:kbuser@localhost/kb"
 # Set up OpenAI API credentials
 openai.api_key = ""
 os.environ["OPENAI_API_KEY"] = openai.api_key
