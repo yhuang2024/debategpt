@@ -69,10 +69,7 @@ def send_message(message: Message):
     #conversation is also an object
     conversation = [{"role": "system", "content": "DIRECTIVE_FOR_gpt-3.5-turbo"}]
     conversation.append(text)
-    print(text)
-    print(conversation)
     bot_response = openai.ChatCompletion.create(model="gpt-3.5-turbo", messages=conversation)
-    print("bot response")
     answer = bot_response.choices[0].message.content
 
     if answer:
@@ -106,19 +103,14 @@ def get_engine_from_openai(text):
         chunk_overlap=0
     )
     docs = text_splitter.create_documents([text])
-    print(docs)
-    print(len(docs))
     embeddings = OpenAIEmbeddings(openai_api_key=os.environ['OPENAI_API_KEY'])
 
     docsearch = Chroma.from_documents(docs, embeddings)
     llm = ChatOpenAI(model_name="gpt-3.5-turbo", temperature=0)
-    #qa = VectorDBQA.from_chain_type(llm=llm, chain_type="stuff", vectorstore=docsearch)
     qa = RetrievalQA.from_chain_type(llm=llm,
                                      chain_type="stuff",
                                      retriever=docsearch.as_retriever())
     return qa
-
-
 
 @app.on_event("startup")
 @repeat_every(seconds=300 * 1)  # 300 seconds
