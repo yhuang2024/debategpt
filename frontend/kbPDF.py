@@ -39,7 +39,6 @@ def main():
     elif page == "Debate":
         debate_page()
 
-
 def contribute_page():
     st.header("If you have knowledge on debate strategy, tips, resolution ideas, tournament help, etc. share it here!")
     file = st.file_uploader("Upload a PDF file", type="pdf")
@@ -66,10 +65,6 @@ def contribute_page():
 
 def debate_page():
     st.header("Debate with an AI partner!")
-    #image_path = "wildcat.jpg"
-    #custom_width = 100
-    #st.image(image_path, width=custom_width)
-
     class Message:
         def __init__(self, role, content):
             self.role = role
@@ -97,7 +92,6 @@ def debate_page():
         context = " ".join(st.session_state.context)
         response = requests.post(BACKEND_URL + "/debate", json={"text": context})
         bot_response = response.json()
-        print(bot_response)
         #add bot's response from previous input to this input
         st.session_state.messages.append(Message("bot", bot_response))
         st.session_state.context.append(bot_response)
